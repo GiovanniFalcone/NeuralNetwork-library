@@ -161,9 +161,8 @@ class GridSearch:
 
         It saves the heatmap as 'Heatmap_neurons_(n_neurons,).jpg
         """
-         # Convertire le liste in tuple per rendere la colonna hashable
+        # in order iterate over neurons deletes duplicates and saves them in a variable
         df['m_neurons_list'] = df['m_neurons_list'].apply(tuple)
-        # Ora puoi estrarre i valori unici
         neurons_configs = df['m_neurons_list'].unique()
         # create an heatmap for combination of neurons
         for neurons in neurons_configs:
@@ -179,13 +178,13 @@ class GridSearch:
                                                             columns='momentum')
             plt.figure(figsize=(14, 6))
             # Loss heatmap
-            plt.subplot(1, 2, 1)  # 1 riga, 2 colonne, primo subplot
+            plt.subplot(1, 2, 1)  # 1 row, 2 columns, first subplot
             sns.heatmap(heatmap_data_loss, annot=True, fmt=".4f", cmap="YlGnBu", cbar_kws={'label': 'Final Validation Loss'})
             plt.title(f"Loss Heatmap - Neurons: {neurons}")
             plt.xlabel("Momentum")
             plt.ylabel("Learning Rate")
             # Accuracy heatmap
-            plt.subplot(1, 2, 2)  # 1 riga, 2 colonne, secondo subplot
+            plt.subplot(1, 2, 2) 
             sns.heatmap(heatmap_data_accuracy, annot=True, fmt=".4f", cmap="YlGnBu", cbar_kws={'label': 'Final Validation Accuracy'})
             plt.title(f"Accuracy Heatmap - Neurons: {neurons}")
             plt.xlabel("Momentum")
