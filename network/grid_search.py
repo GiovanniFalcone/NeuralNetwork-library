@@ -25,7 +25,7 @@ class GridSearch:
               f1_avg_type = None):
         
         # id of combination
-        id = 100
+        id = 0
         # get hyperparameters of the grid
         keys = list(self.param_grid.keys())
         values = list(self.param_grid.values())
