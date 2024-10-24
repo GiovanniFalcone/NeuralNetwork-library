@@ -33,7 +33,7 @@ grid_search.train(
     y_val=Y_val, 
     epochs=500,
     early_stopper = EarlyStopping(),
-    mode='batch',
+    mode='online',
     f1_avg_type='macro'
 )
 

@@ -42,6 +42,8 @@ class NeuralNetwork:
         self.error_function = error_function
         self.weights = []
         self.biases = []
+        self.velocity_w = [0] * self.n_layers
+        self.velocity_b = [0] * self.n_layers
 
         # init weights and biases
         self.__init_parameters()
@@ -157,7 +159,7 @@ class NeuralNetwork:
         val_loss_list, val_ac_list, val_f1_list = [], [], []
         # for early stopping
         stopped_epoch, flag = None, False
-
+ 
         print(f"Learning mode is {mode}\n[==============================]\n")       
         
         for e in range(epochs):
@@ -195,7 +197,7 @@ class NeuralNetwork:
             if x_val is not None:
                 # in order to verify the early stop condition
                 e_train = train_loss_list[-1]
-                e_val_curr = val_loss_list[-1] if x_val is not None else None
+                e_val_curr = val_loss_list[-1] 
                 # if condition of early stopping is verfied stop learning
                 if early_stopper.check_early_stop_condition(e, e_train, e_val_curr, min_error, flag):
                     print(f"Early stopping condition met at epoch {e}.")
@@ -204,7 +206,10 @@ class NeuralNetwork:
 
         # update best network
         if best_net != None:
-            self = copy.deepcopy(best_net)
+            self.weights = copy.deepcopy(best_net.weights)
+            self.biases = copy.deepcopy(best_net.biases)
+            self.velocity_w = copy.deepcopy(best_net.velocity_w)
+            self.velocity_b = copy.deepcopy(best_net.velocity_b)
             
         print(f"Total time: {tot_time:.2f}s")
 
@@ -537,14 +542,11 @@ class NeuralNetwork:
                 self.weights[i] = self.weights[i] - (learning_rate * weights_derivative[i])
                 self.biases[i] = self.biases[i] - (learning_rate * biases_derivative[i])
         else:
-            velocity_w = [0] * self.n_layers
-            velocity_b = [0] * self.n_layers
-
             for i in range(self.n_layers):
-                velocity_w[i] = (momentum * velocity_w[i]) - (learning_rate * weights_derivative[i])
-                velocity_b[i] = (momentum * velocity_b[i]) - (learning_rate * biases_derivative[i])
-                self.weights[i] += velocity_w[i]
-                self.biases[i] += velocity_b[i]
+                self.velocity_w[i] = (momentum * self.velocity_w[i]) - (learning_rate * weights_derivative[i])
+                self.velocity_b[i] = (momentum * self.velocity_b[i]) - (learning_rate * biases_derivative[i])
+                self.weights[i] += self.velocity_w[i]
+                self.biases[i] += self.velocity_b[i]
 
     ###############################################################################################################
     #                                                   Support                                                  #

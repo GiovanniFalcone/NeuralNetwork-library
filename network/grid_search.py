@@ -62,7 +62,8 @@ class GridSearch:
                 momentum=params['momentum'],
                 early_stopper=early_stopper,
                 mode=mode,
-                f1_avg_type=f1_avg_type
+                f1_avg_type=f1_avg_type,
+                num_mini_batches=num_mini_batches
             )
 
             # plot metrics of the current combination
