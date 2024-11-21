@@ -1,0 +1,16 @@
+              precision    recall  f1-score   support
+
+     Digit 0       0.34      0.96      0.50       980
+     Digit 1       0.99      0.93      0.96      1135
+     Digit 2       0.86      0.89      0.88      1032
+     Digit 3       0.65      0.12      0.21      1010
+     Digit 4       0.59      0.08      0.14       982
+     Digit 5       0.42      0.79      0.55       892
+     Digit 6       0.49      0.04      0.07       958
+     Digit 7       0.47      0.89      0.62      1028
+     Digit 8       0.55      0.51      0.53       974
+     Digit 9       0.30      0.05      0.08      1009
+
+    accuracy                           0.53     10000
+   macro avg       0.56      0.53      0.45     10000
+weighted avg       0.57      0.53      0.46     10000
