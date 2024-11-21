@@ -22,7 +22,8 @@ class GridSearch:
               mode='batch', 
               num_mini_batches = 32, 
               early_stopper = EarlyStopping(),
-              f1_avg_type = None):
+              f1_avg_type = None,
+              cv = 5):
         
         # id of combination
         id = 0
