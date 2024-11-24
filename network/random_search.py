@@ -17,10 +17,8 @@ class RandomSearch:
         self.results = []
 
     def train(self, 
-              x_train: np.ndarray, 
-              y_train: np.ndarray, 
-              x_val: np.ndarray, 
-              y_val: np.ndarray, 
+              Dataset_items: np.ndarray, 
+              Dataset_labels: np.ndarray, 
               epochs: int, 
               mode='batch', 
               num_mini_batches = 32, 
@@ -29,14 +27,11 @@ class RandomSearch:
               num_combinations_per_neuron=2,
               cv=5):
         
-        if x_val and cv > 1:
-            raise ValueError("If strategy is K-fold Cross Validation, X_val and Y_val must be None (i.e pass all the training set)!")
-        
         # id of combination
         id = 200
 
         # split in cv folds
-        folds = Utility.split_batch(y_train, cv)
+        folds = Utility.split_batch(Dataset_labels, cv)
 
         # extract hyperparameters
         m_neurons_list = self.param_grid['m_neurons_list']
@@ -69,6 +64,7 @@ class RandomSearch:
             # list of metrics to update for each fold
             accuracies_t = []
             accuracies_v = []
+            score_for_fold = []
             errors_t = []
             errors_v = []
             f1_scores_t = []
@@ -91,22 +87,34 @@ class RandomSearch:
             for i in range(len(folds)):
                 print(f"Fold: {i + 1}")
 
-                # Validation fold
-                idx_val = folds[i]
+                # test fold
+                idx_test = folds[i]
 
+                # val fold index
+                if i == len(folds) - 1:
+                    k = 0       # first fold
+                else:
+                    k = i + 1   # next fold
+
+                # val fold
+                idx_val = folds[k]
+                
                 # Training folds: concatenates all of them but the i-th fold
-                idx_train = np.concatenate([folds[j] for j in range(len(folds)) if j != i])
+                idx_train = np.concatenate([folds[j] for j in range(len(folds)) if (j != i and j != k)])
+                print(i, k, [j for j in range(len(folds)) if (j != i and j != k)])
                 
                 # Crea training set e validation set
-                X_train = x_train[:, idx_train]
-                Y_train = y_train[:, idx_train]
-                X_val = x_train[:, idx_val]
-                Y_val = y_train[:, idx_val]
+                X_train = Dataset_items[:, idx_train]
+                Y_train = Dataset_labels[:, idx_train]
+                X_val = Dataset_items[:, idx_val]
+                Y_val = Dataset_labels[:, idx_val]
+                X_target = Dataset_items[:, idx_test]
+                Y_target = Dataset_labels[:, idx_test]
 
                 # create model
                 nn = self.model_class(
-                    input_size=x_train.shape[0],
-                    output_size=y_train.shape[0],
+                    input_size=Dataset_items.shape[0],
+                    output_size=Dataset_labels.shape[0],
                     n_hidden_layers=self.param_grid['n_hidden_layers'],
                     m_neurons_list=[neurons],
                     activation_list=self.param_grid['activation_list'],
@@ -126,6 +134,11 @@ class RandomSearch:
                                 num_mini_batches=num_mini_batches,
                                 f1_avg_type=f1_avg_type
                 )
+
+                # evaluate model
+                target_names = ['Digit 0', 'Digit 1', 'Digit 2', 'Digit 3', 'Digit 4', 'Digit 5', 
+                    'Digit 6', 'Digit 7', 'Digit 8', 'Digit 9',]
+                score, _, _ = nn.evaluate_model(X_target, Y_target, target_names)
         
                 # Save scores of current model
                 e = res['epoch_best']
@@ -137,6 +150,7 @@ class RandomSearch:
                 f1_scores_v.append(res['f1-score_v'][e])
                 time_list.append(float(res['Time']))
                 epoch_list.append(int(e))
+                score_for_fold.append(score)
 
                 # save lists for plotting once all folds are processed
                 plot_acc_tr.append(res['Accuracy_train'])
@@ -145,6 +159,7 @@ class RandomSearch:
                 plot_err_val.append(res['Loss_val'])
 
             # plot metrics of the current combination:
+            self.__plot_score(id, score_for_fold, dir)
             self.__plot_folds_metrics(id, accuracies_v, errors_v, dir)
             self.__plot_folds_over_time(id, plot_acc_tr, plot_acc_val, plot_err_tr, plot_err_val, dir, len(folds))
 
@@ -163,6 +178,9 @@ class RandomSearch:
                 # accuracy val
                 'mean_acc_val': np.mean(accuracies_v),
                 'std_acc_val': np.std(accuracies_v),
+                # test set score
+                'mean_score': np.mean(score_for_fold),
+                'std_score': np.std(score_for_fold),
                 # loss train
                 'mean_err_train': np.mean(errors_t),
                 'std_err_train': np.std(errors_t),
@@ -192,9 +210,9 @@ class RandomSearch:
         df = pd.DataFrame(self.results)
         df.to_excel(f"./evaluation/random_search/{mode}/tuning.xlsx", index=False)
     
-    def best_param(self, metric='mean_acc_val'):
-        if metric not in ['mean_acc_val', 'mean_acc_train', 'mean_f1_train', 'mean_f1_val']:
-            raise ValueError("Metric must be 'mean_acc_val' or 'mean_acc_train' or 'mean_f1_train', 'mean_f1_val'!")
+    def best_param(self, metric='mean_score'):
+        if metric not in ['mean_acc_val', 'mean_acc_train', 'mean_f1_train', 'mean_f1_val', 'mean_score']:
+            raise ValueError("Metric must be 'mean_score', 'mean_acc_val' or 'mean_acc_train' or 'mean_f1_train', 'mean_f1_val'!")
         
         return max(self.results, key=lambda x: x[metric])
 
@@ -265,9 +283,33 @@ class RandomSearch:
         axes[1].set_ylabel("Loss")
         axes[1].set_xticks(range(1, len(errors_v) + 1))
 
-        # Add a main title for the figure
+        # add title and save the plot
         fig.suptitle(f"Metrics Across Folds - Configuration {id + 1}", fontsize=16, fontweight='bold')
-        
-        # Adjust layout and save the figure
         plt.savefig(f"{directory}/config_{id}_fold_metrics.jpg")
         plt.close(fig)
+
+    def __plot_score(self, id, score_for_fold, directory):
+        data_acc = {
+            'Fold': np.arange(1, len(score_for_fold) + 1), 
+            'Accuracy': score_for_fold
+        }
+
+        # dictionary to dataframe in order to plot data
+        df_acc = pd.DataFrame(data_acc)
+
+        # color
+        sns.set_style("darkgrid") 
+        sns.color_palette("flare")
+
+        # Create the figure
+        plt.figure(figsize=(15, 6))
+
+        # plot the score (on test) for each fold
+        sns.barplot(x='Fold', y='Accuracy', data=df_acc, color="steelblue")
+        plt.title(f"Score Across Folds - Configuration {id + 1}", fontsize=16, fontweight='bold')  # Titolo
+        plt.xlabel("Fold")  
+        plt.ylabel("Score")
+        
+        # save plot
+        plt.savefig(f"{directory}/score_config_{id}_fold.jpg")
+        plt.close()

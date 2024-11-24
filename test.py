@@ -71,13 +71,13 @@ X_train, Y_train, X_test, Y_test = Dataset.load_mnist()
 # testing(None, path_load, X_test, Y_test, path_save, 'M23', None)
 
 # Test all models
-csv_path = "./plot/batch/test/refine/Accuracies_test.csv"
+csv_path = "./plot/batch/test/Accuracies_test.csv"
 
 # max id of folder (e.g batch = 59 + 1)
-id = 87 # change id
-for i in range(60, id):
-    path_load = f"./evaluation/batch/refine/{i}/model.pkl"
-    path_save = "./plot/batch/test/refine"
+id = 60 # change id
+for i in range(0, id):
+    path_load = f"./evaluation/batch/{i}/model.pkl"
+    path_save = "./plot/batch/test"
     model_name = f"M{i}"
     print(f"Testing model {model_name}...")
     testing(None, path_load, X_test, Y_test, path_save, model_name, csv_path)
